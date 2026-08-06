@@ -36,12 +36,21 @@ async def fetch_episodes(anilist_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/watch/anidbapp/{anilist_id}/{audio}/anidbapp-{ep_num}")
+@app.get("/watch/anidbapp/{anilist_id}/{audio}/{ep_num}")
+@app.get("/watch/anidbapp/{anilist_id}/anidbapp-{ep_num}")
+@app.get("/watch/anidbapp/{anilist_id}/{ep_num}")
+@app.get("/watch/{anilist_id}/{audio}/anidbapp-{ep_num}")
 @app.get("/watch/{anilist_id}/{audio}/{ep_num}")
-async def fetch_watch(anilist_id: int, audio: str, ep_num: int):
-    if audio not in ["sub", "dub"]:
-        raise HTTPException(status_code=400, detail="Audio must be 'sub' or 'dub'")
+@app.get("/watch/{anilist_id}/{ep_num}")
+async def fetch_watch(anilist_id: int, ep_num: str, audio: str = "both"):
+    clean_ep = str(ep_num).lower().replace("anidbapp-", "").strip()
+    if not clean_ep.isdigit():
+        raise HTTPException(status_code=400, detail="Episode number must be an integer")
+        
+    ep_int = int(clean_ep)
     try:
-        data = await handle_watch(anilist_id, audio, ep_num)
+        data = await handle_watch(anilist_id, audio, ep_int)
         if isinstance(data, dict) and data.get("status") == 404:
             raise HTTPException(status_code=404, detail=data.get("error"))
         return data
