@@ -599,8 +599,13 @@ async def get_episodes(anilist_id: int, ctx: Optional[dict] = None) -> dict:
     expected = expected_count(media, ctx.get("anizip"), ctx.get("jikanEps"))
     offset = infer_offset(episodes, expected)
 
-    sample_ep_id = episodes[0].get("id") if (episodes and isinstance(episodes[0], dict)) else None
-    sample_languages = await fetch_languages(sample_ep_id, series["slug"]) if sample_ep_id else []
+    sample_languages = []
+    if episodes:
+        for ep in episodes[:5]:
+            ep_id = ep.get("id") if isinstance(ep, dict) else None
+            if ep_id:
+                langs = await fetch_languages(ep_id, series["slug"])
+                sample_languages.extend(langs)
 
     availability = {
         "hasSub": has_language(sample_languages, "sub") or not sample_languages,
@@ -650,27 +655,27 @@ async def handle_watch(anilist_id: int, audio: str, ep_num: int, ctx: Optional[d
         return {"error": f"AniDB.app episode {ep_num} not found", "status": 404}
 
     languages = await fetch_languages(episode.get("id"), series["slug"])
-    language = language_for_audio(languages, audio)
+    
+    audios_to_fetch = ["sub", "dub"] if str(audio).lower() in ["both", "all"] else [audio]
+    all_streams = []
+    used_lang_codes = []
 
-    if not language or not language.get("embed_url"):
-        return {
-            "anilistId": int(anilist_id),
-            "episode": int(ep_num),
-            "providerEpisode": provider_ep,
-            "audio": audio,
-            "streams": []
-        }
-
-    embed_url = decode_entities(language.get("embed_url"))
-    streams = await streams_for_embed(embed_url, audio, language)
+    for aud in audios_to_fetch:
+        language = language_for_audio(languages, aud)
+        if language and language.get("embed_url"):
+            embed_url = decode_entities(language.get("embed_url"))
+            st = await streams_for_embed(embed_url, aud, language)
+            all_streams.extend(st)
+            if language.get("code"):
+                used_lang_codes.append(language.get("code"))
 
     return {
         "anilistId": int(anilist_id),
         "episode": int(ep_num),
         "providerEpisode": provider_ep,
         "audio": audio,
-        "language": language.get("code"),
-        "streams": streams
+        "language": ",".join(used_lang_codes) if used_lang_codes else None,
+        "streams": all_streams
     }
 
 
