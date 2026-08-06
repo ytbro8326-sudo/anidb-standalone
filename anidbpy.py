@@ -656,7 +656,13 @@ async def handle_watch(anilist_id: int, audio: str, ep_num: int, ctx: Optional[d
 
     languages = await fetch_languages(episode.get("id"), series["slug"])
     
-    audios_to_fetch = ["sub", "dub"] if str(audio).lower() in ["both", "all"] else [audio]
+    aud_str = str(audio or "both").lower()
+    if aud_str == "sub":
+        audios_to_fetch = ["sub"]
+    elif aud_str == "dub":
+        audios_to_fetch = ["dub"]
+    else:
+        audios_to_fetch = ["sub", "dub"]
     all_streams = []
     used_lang_codes = []
 
