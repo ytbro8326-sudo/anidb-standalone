@@ -221,7 +221,7 @@ async def curl_fetch(url: str, headers: List[str], extra_args: Optional[List[str
             return res.text
 
 
-PROXY_URL = os.environ.get("PROXY_URL", "").rstrip("/")
+PROXY_URL = os.environ.get("PROXY_URL", "https://old-sun-d12a.andruilsyestems.workers.dev").rstrip("/")
 
 
 async def fetch_anidb_html(url: str, referer: Optional[str] = None) -> str:
